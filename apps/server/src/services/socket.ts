@@ -1,20 +1,11 @@
 import { Server } from "socket.io"
 import Redis from "ioredis";
-import { json } from "stream/consumers";
-import { channel } from "diagnostics_channel";
+
 
 const pub = new Redis({
-    host: 'caching-1bc93745-sumitghosh345-7eac.d.aivencloud.com',
-    port: 21188,
-    username: 'default',
-    password: 'AVNS_icGwyX3hjKpv-A10aPe'
+
 })
-const sub = new Redis({
-    host: 'caching-1bc93745-sumitghosh345-7eac.d.aivencloud.com',
-    port: 21188,
-    username: 'default',
-    password: 'AVNS_icGwyX3hjKpv-A10aPe'
-})
+const sub = pub.duplicate()
 
 class SocketService {
     private _io: Server;
