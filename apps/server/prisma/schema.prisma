@@ -6,6 +6,37 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement()) // Unique user ID
+  oauth_id  String   @unique // OAuth provider ID (e.g., Google, GitHub)
+  name      String   // User's name
+  email     String   @unique // User's email
+  avatar    String?  // URL to the user's avatar
+  created_at DateTime @default(now()) // Timestamp of account creation
+  rooms     Room[]   // Rooms created by the user
+}
+
+model Room {
+  id          String   @id @default(uuid()) // Unique room ID (UUID)
+  name        String   // Room name
+  creator_id  Int      // User who created the room
+  creator     User     @relation(fields: [creator_id], references: [id], onDelete: Cascade) // Relation to User
+  expire_date DateTime // Room expiration date
+  created_at  DateTime @default(now()) // Timestamp of room creation
+  messages    Message[] // Messages in the room
+}
+
+model Message {
+  id           String   @id @default(uuid()) // Unique message ID (UUID)
+  room_id      String   // Room the message belongs to
+  room         Room     @relation(fields: [room_id], references: [id], onDelete: Cascade) // Relation to Room
+  sender_type  String   // Type of sender (authenticated user or guest)
+  sender_name  String   // Name of the sender
+  sender_avatar String? // Avatar URL of the sender (only for authenticated users)
+  content      String   // Message content
+  created_at   DateTime @default(now()) // Timestamp of message creation
 }

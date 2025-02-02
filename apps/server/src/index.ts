@@ -1,18 +1,34 @@
-import http from 'http'
-import SocketService from './services/socket'
+import express from "express";
+import session from "express-session";
+import passport from "passport";
+import authRouter from "./routes/auth.route";
+import { isAuthenticated } from "./middleware/auth.middleware";
+import "./config/passport"; // Import Passport configuration
 
-async function main() {
-    const socketService = new SocketService()
-    const httpServer = http.createServer()
+const app = express();
 
-    const PORT = 8080
+// Middleware
+app.use(express.json());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET!,
+    resave: false,
+    saveUninitialized: true,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
-    socketService.io.attach(httpServer)
-    httpServer.listen(PORT, () => {
-        console.log(`Server is up and running on ${PORT}`)
-    })
+// Routes
+app.use("/auth", authRouter);
 
-    socketService.initListeners()
-}
+// Protected route example
+app.get("/protected", isAuthenticated, (req, res) => {
+  res.json({ message: "You are authenticated!", user: req.user });
+});
 
-main()
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
+});
