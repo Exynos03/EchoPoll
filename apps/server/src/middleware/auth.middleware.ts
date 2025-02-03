@@ -1,7 +1,15 @@
 import { Request, Response, NextFunction } from "express";
+// import { User } from '@prisma/client';
 
+interface User {
+    id: number; // Assuming `id` is a string, change to `number` if needed
+  }
+  
+  interface AuthenticatedRequest extends Request {
+    user?: User; // Make `user` optional
+  }
 export const isAuthenticated = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) => {

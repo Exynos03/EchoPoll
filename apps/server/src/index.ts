@@ -24,11 +24,6 @@ app.use(passport.session());
 app.use("/auth", authRouter);
 app.use("/create", roomRouter)
 
-// Protected route example
-app.get("/protected", isAuthenticated, (req, res) => {
-  res.json({ message: "You are authenticated!", user: req.user });
-});
-
 
 const PORT = process.env.PORT || 8080;
 
