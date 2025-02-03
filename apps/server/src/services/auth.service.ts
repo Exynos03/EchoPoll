@@ -2,7 +2,7 @@ import { PrismaClient, User } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export class UserService {
+export class AuthService {
   /**
    * Find a user by their OAuth ID.
    * @param oauthId - The OAuth provider ID (e.g., Google, GitHub).

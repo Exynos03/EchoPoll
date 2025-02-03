@@ -15,7 +15,7 @@ authRouter.get(
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     // Successful authentication, redirect to profile or home page
-    res.redirect("/profile");
+    res.redirect("/auth/profile");
   }
 );
 
