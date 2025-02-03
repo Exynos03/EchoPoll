@@ -4,6 +4,7 @@ import passport from "passport";
 import authRouter from "./routes/auth.route";
 import { isAuthenticated } from "./middleware/auth.middleware";
 import "./config/passport"; // Import Passport configuration
+import roomRouter from "./routes/room.route";
 
 const app = express();
 
@@ -21,11 +22,13 @@ app.use(passport.session());
 
 // Routes
 app.use("/auth", authRouter);
+app.use("/create", roomRouter)
 
 // Protected route example
 app.get("/protected", isAuthenticated, (req, res) => {
   res.json({ message: "You are authenticated!", user: req.user });
 });
+
 
 const PORT = process.env.PORT || 8080;
 
