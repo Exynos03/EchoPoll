@@ -10,6 +10,8 @@ import roomRouter from "./routes/room.route";
 import { connectRedis } from "./config/redis";
 import { connectKafka } from "./config/kafka";
 import prisma from "./config/prisma";
+import { startKafkaConsumer } from "./services/kafka.service";
+import { setupRoomSocket } from "./sockets/room.socket";
 
 const app = express();
 const server = http.createServer(app);
@@ -49,6 +51,10 @@ const initializeServices = async () => {
     process.exit(1);
   }
 };
+
+startKafkaConsumer()
+
+setupRoomSocket(io)
 
 const PORT = process.env.PORT || 7000;
 

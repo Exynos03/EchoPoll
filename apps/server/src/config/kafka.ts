@@ -1,9 +1,9 @@
 import fs  from 'fs';
-import { Kafka, Producer, Consumer, Partitioners  } from 'kafkajs';
+import { Kafka, Producer, Consumer, Partitioners, logLevel } from 'kafkajs';
 import path from 'path';
 
 const kafka = new Kafka({
-  clientId: 'qna-app',
+  // clientId: 'eurora-app',
   brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
   ssl : {
     ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")]
@@ -13,22 +13,32 @@ const kafka = new Kafka({
     password : process.env.KAFKA_PASSWORD!,
     mechanism: "plain"
   },
-
+  logLevel: logLevel.ERROR
 });
 
 const producer: Producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner,}) // Add this to retain old behavior});
 const consumer: Consumer = kafka.consumer({ groupId: 'eurora-app-group' });
 
 const connectKafka = async () => {
+  const admin = kafka.admin();
+  await admin.connect();
+  console.log("✅ Connected to Kafka Admin");
+
+  // Fetch metadata to ensure Kafka knows about the topic
+  await admin.fetchTopicMetadata({ topics: [] }); 
+
   await producer.connect();
   await consumer.connect();
-  console.log('Connected to Kafka');
+  console.log('✅ Connected to Kafka Producer and Consumer');
+  
+  await admin.disconnect();
 };
 
-const sendMessage = async (topic: string, message: string) => {
+
+const sendMessageToKafka = async (topic: string, message: string) => {
   await producer.send({
     topic,
-    messages: [{ value: message }],
+    messages: [{ value: message, partition: 0 }],
   });
 };
 
@@ -43,4 +53,4 @@ const consumeMessages = async (topic: string, callback: (message: string) => voi
   });
 };
 
-export { connectKafka, sendMessage, consumeMessages };
+export { connectKafka, sendMessageToKafka, consumeMessages };
