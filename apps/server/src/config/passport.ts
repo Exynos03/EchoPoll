@@ -8,7 +8,7 @@ passport.use(
     new GoogleStrategy({
             clientID: process.env.GCLIENT_ID!,
             clientSecret: process.env.GCLIENT_SECRET!,
-            callbackURL: 'http://localhost:8080/auth/google/callback',
+            callbackURL: `http://localhost:${process.env.PORT}/auth/google/callback`,
         }, async (accessToken, refreshToken, profile, done) => {
             try {
               // Check if the user already exists in the database
@@ -44,8 +44,12 @@ passport.serializeUser((user, done) => {
   
 // Deserialize user from the session
   passport.deserializeUser(async (oauth_id: string, done) => {
-    const user = await authService.findUserByOAuthId(oauth_id)
-    done(null, user);
+    try {
+      const user = await authService.findUserByOAuthId(oauth_id)
+      done(null, user || null);
+    } catch (error) {
+      done(error, null);
+    }
   });
   
   export default passport;
