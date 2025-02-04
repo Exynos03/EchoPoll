@@ -1,47 +1,46 @@
-import { Kafka, Producer, Consumer } from 'kafkajs';
-import fs from 'fs'
+import fs  from 'fs';
+import { Kafka, Producer, Consumer, Partitioners  } from 'kafkajs';
 import path from 'path';
 
-// Kafka configuration
 const kafka = new Kafka({
-//   clientId: 'qna-app', // Unique identifier for the client
-    brokers: [process.env.KAFKA_HOST!] , // Kafka broker addresses
-    ssl : {
-        ca : [fs.readFileSync(path.resolve("./ca.pem"), 'utf-8')]
-    },
-    sasl : {
-        username: process.env.KAFKA_USERNAME!,
-        password: process.env.KAFKA_PASSWORD!,
-        mechanism: "plain"
-    }
+  clientId: 'qna-app',
+  brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
+  ssl : {
+    ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")]
+  },
+  sasl : {
+    username : process.env.KAFKA_USERNAME!,
+    password : process.env.KAFKA_PASSWORD!,
+    mechanism: "plain"
+  },
+
 });
 
-// Create a Kafka producer instance
-export const kafkaProducer = kafka.producer();
+const producer: Producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner,}) // Add this to retain old behavior});
+const consumer: Consumer = kafka.consumer({ groupId: 'eurora-app-group' });
 
-// Create a Kafka consumer instance
-export const kafkaConsumer = kafka.consumer({ groupId: 'eurora-app-group' });
-
-// Function to connect Kafka producer and consumer
-export const connectKafka = async () => {
-  try {
-    await kafkaProducer.connect();
-    await kafkaConsumer.connect();
-    console.log('Connected to Kafka successfully');
-  } catch (error) {
-    console.error('Failed to connect to Kafka:', error);
-    throw error;
-  }
+const connectKafka = async () => {
+  await producer.connect();
+  await consumer.connect();
+  console.log('Connected to Kafka');
 };
 
-// Function to disconnect Kafka producer and consumer
-export const disconnectKafka = async () => {
-  try {
-    await kafkaProducer.disconnect();
-    await kafkaConsumer.disconnect();
-    console.log('Disconnected from Kafka successfully');
-  } catch (error) {
-    console.error('Failed to disconnect from Kafka:', error);
-    throw error;
-  }
+const sendMessage = async (topic: string, message: string) => {
+  await producer.send({
+    topic,
+    messages: [{ value: message }],
+  });
 };
+
+const consumeMessages = async (topic: string, callback: (message: string) => void) => {
+  await consumer.subscribe({ topic, fromBeginning: true });
+  await consumer.run({
+    eachMessage: async ({ message }) => {
+      if (message.value) {
+        callback(message.value.toString());
+      }
+    },
+  });
+};
+
+export { connectKafka, sendMessage, consumeMessages };
