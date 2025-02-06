@@ -1,6 +1,6 @@
-import express from "express";
+import express, { NextFunction } from "express";
 import http from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import session from "express-session";
 import passport from "passport";
 import authRouter from "./routes/auth.route";
@@ -19,11 +19,18 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Adjust as needed
-    methods: ['GET', 'POST']
+    origin: 'http://localhost:3000', // Adjust as needed
+    methods: ['GET', 'POST'],
+    credentials: true,
   }
 });
 
+app.use(cors({
+  origin: "http://localhost:3000", // Allow requests from frontend
+  credentials: true, // Allow cookies/session to be sent
+}));
+
+// Session middleware
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET!,
   resave: false,
@@ -31,9 +38,10 @@ const sessionMiddleware = session({
   cookie: {
     secure: false, // Set to `true` in production if using HTTPS
     httpOnly: true,
-    maxAge: 72 * 60 * 60 * 1000, // 3 day
+    maxAge: 72 * 60 * 60 * 1000, // 3 days
+    sameSite: "lax"
   },
-})
+});
 
 // Middleware
 app.use(express.json());
@@ -42,19 +50,32 @@ app.use(express.urlencoded({ extended: true }));
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Socket.io middleware for authentication
 io.use((socket, next) => {
   sessionMiddleware(socket.request as any, {} as any, (err?: any) => {
     if (err) {
       return next(new Error("Session middleware failed"));
     }
-    next();
+
+    // Passport authentication check
+    passport.authenticate('session', (authErr: any, user: any, info: any) => {
+      if (authErr || !user) {
+        return next(new Error("Unauthorized"));
+      }
+      
+      (socket as any).user = user; // Store authenticated user on socket object
+      next();
+    })(socket.request, {} as any, next);
   });
 });
-io.use(validateRoomID)
+
+// Validate Room ID middleware
+io.use(validateRoomID);
 
 // Routes
 app.use("/auth", authRouter);
-app.use("/room", roomRouter)
+app.use("/room", roomRouter);
 
 // Initialize Redis and Kafka
 const initializeServices = async () => {
@@ -67,9 +88,9 @@ const initializeServices = async () => {
   }
 };
 
-startKafkaConsumer()
-
-setupRoomSocket(io)
+// Start Kafka consumer and set up room socket handling
+startKafkaConsumer();
+setupRoomSocket(io);
 
 const PORT = process.env.PORT || 7000;
 

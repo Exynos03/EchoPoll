@@ -64,6 +64,7 @@ const setupRoomSocket = (io: Server) => {
        try {
         // Ensure user is logged in
         const user = (socket.request as any).user;
+        console.log("User in socket request:", user);
 
         if (!user) {
           return socket.emit("error", { message: "Unauthorized: Please log in" });

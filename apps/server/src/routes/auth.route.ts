@@ -15,7 +15,7 @@ authRouter.get(
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
     // Successful authentication, redirect to profile or home page
-    res.redirect("/auth/profile");
+    res.redirect("http://localhost:3000/auth/callback");
   }
 );
 
@@ -24,6 +24,7 @@ authRouter.get("/profile", (req, res) => {
   if (!req.user) {
     return res.redirect("/login"); // Redirect if user is not authenticated
   }
+  console.log("backend is fine!")
   res.json(req.user); // Send user data as JSON
 });
 

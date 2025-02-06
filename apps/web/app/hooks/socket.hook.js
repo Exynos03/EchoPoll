@@ -8,9 +8,14 @@ export const useSocket = (roomId) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
+    // Don't initialize socket until we have a valid roomId
+    if (!roomId) return;
+
+    // Initialize socket instance and handle socket connection
     const socketInstance = io(SOCKET_SERVER_URL, {
+      withCredentials: true,
       transports: ["websocket"],
-      auth: { roomId } // Use WebSockets directly
+      auth: { roomId }  // Send roomId as part of the socket connection
     });
 
     setSocket(socketInstance);
@@ -23,11 +28,14 @@ export const useSocket = (roomId) => {
       console.log("Disconnected from server");
     });
 
+    // Cleanup on unmount or when roomId changes
     return () => {
-      socketInstance.disconnect();
-      setSocket(null); // Cleanup
+      if (socketInstance.connected) {
+        socketInstance.disconnect();
+      }
+      setSocket(null); // Cleanup state
     };
-  }, []);
+  }, [roomId]); // Re-run effect when roomId changes
 
   return socket;
 };

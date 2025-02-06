@@ -9,7 +9,6 @@ interface CustomSocket extends Socket {
 export const validateRoomID = async (socket: CustomSocket, next: (err?: Error) => void) => {
     try {
         const { roomId } = socket.handshake.auth;
-        console.log(socket.handshake)
         if (!roomId || typeof roomId !== "string") {
             return next(new Error("Room ID is required and must be a string"));
         }
