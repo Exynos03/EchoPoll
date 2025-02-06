@@ -13,37 +13,39 @@ const kafka = new Kafka({
     password : process.env.KAFKA_PASSWORD!,
     mechanism: "plain"
   },
-  logLevel: logLevel.ERROR
+  // logLevel: logLevel.ERROR
 });
 
 const producer: Producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner,}) // Add this to retain old behavior});
-const consumer: Consumer = kafka.consumer({ groupId: 'eurora-app-group' });
+const consumer: Consumer = kafka.consumer({ groupId: 'room-chat' });
 
 const connectKafka = async () => {
-  const admin = kafka.admin();
-  await admin.connect();
-  console.log("✅ Connected to Kafka Admin");
-
-  // Fetch metadata to ensure Kafka knows about the topic
-  await admin.fetchTopicMetadata({ topics: [] }); 
-
   await producer.connect();
   await consumer.connect();
-  console.log('✅ Connected to Kafka Producer and Consumer');
   
+  // Force metadata refresh
+  const admin = kafka.admin();
+  await admin.connect();
+  await admin.fetchTopicMetadata({ topics: ['room-chat'] });
   await admin.disconnect();
+
+  console.log('✅ Connected to Kafka Producer and Consumer');
 };
 
 
 const sendMessageToKafka = async (topic: string, message: string) => {
   await producer.send({
     topic,
-    messages: [{ value: message, partition: 0 }],
+    messages: [{ value: message }], // Remove partition: 0 to let Kafka decide
   });
 };
 
+
 const consumeMessages = async (topic: string, callback: (message: string) => void) => {
+  console.log(`📌 Subscribing to topic: ${topic}`);
+
   await consumer.subscribe({ topic, fromBeginning: true });
+
   await consumer.run({
     eachMessage: async ({ message }) => {
       if (message.value) {
@@ -51,6 +53,9 @@ const consumeMessages = async (topic: string, callback: (message: string) => voi
       }
     },
   });
+
+  console.log(`✅ Successfully subscribed to ${topic}`);
 };
+
 
 export { connectKafka, sendMessageToKafka, consumeMessages };

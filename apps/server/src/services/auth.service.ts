@@ -47,8 +47,3 @@ export class AuthService {
     }
   }
 }
-
-// Example usage
-// const userService = new UserService();
-// const user = await userService.findUserByOAuthId('google_oauth_id');
-// const newUser = await userService.saveUser({ oauth_id: 'google_oauth_id', name: 'John Doe', email: 'john@example.com' });

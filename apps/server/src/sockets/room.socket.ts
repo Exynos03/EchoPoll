@@ -1,6 +1,9 @@
 import { Server } from 'socket.io';
 import { publishMessage, subscribeToChannel } from '../config/redis';
 import { sendMessageToKafka } from '../config/kafka';
+import { joinRoomSchema, newAnswerSchema, newQuestionSchema, voteSchema } from '../models/validation.model';
+import { User } from "@prisma/client";
+
 
 /**
  * Sets up Socket.IO and Redis Pub/Sub for real-time room communication.
@@ -8,10 +11,15 @@ import { sendMessageToKafka } from '../config/kafka';
  */
 const setupRoomSocket = (io: Server) => {
   io.on('connection', (socket) => {
-
-    // Join a room
     socket.on('joinRoom', (roomId: string) => {
-      socket.join(roomId);
+        // Validate input
+        const validationResult = joinRoomSchema.safeParse({ roomId});
+
+        if (!validationResult.success) {
+          return socket.emit('error', { message: validationResult.error.errors });
+        }
+      
+        socket.join(roomId);
 
       // Subscribe to Redis channel for the room
       subscribeToChannel(`room:${roomId}`, (message) => {
@@ -22,6 +30,13 @@ const setupRoomSocket = (io: Server) => {
 
     // Handle new question
     socket.on('newQuestion', async (roomId: string, content: string, senderName?: string) => {
+       // Validate input
+       const validationResult = newQuestionSchema.safeParse({ roomId});
+
+       if (!validationResult.success) {
+         return socket.emit('error', { message: validationResult.error.errors });
+       }
+      
       const messageData = {
         type: 'newQuestion',
         data: {
@@ -39,7 +54,7 @@ const setupRoomSocket = (io: Server) => {
         await publishMessage(`room:${roomId}`, JSON.stringify(messageData));
 
         // Send to Kafka for persistence
-        await sendMessageToKafka('eurora-app-group', JSON.stringify(messageData));
+        await sendMessageToKafka('room-chat', JSON.stringify(messageData));
 
       } catch (error) {
         console.error('Failed to publish new question:', error);
@@ -48,6 +63,23 @@ const setupRoomSocket = (io: Server) => {
 
     // Handle new answer (only room creator can answer)
     socket.on('newAnswer', async (roomId: string, content: string, questionId: string) => {
+       // Validate input
+       try {
+
+        // Ensure user is logged in
+        const user = (socket.request as any).user;
+
+        if (!user) {
+          return socket.emit("error", { message: "Unauthorized: Please log in" });
+        }
+
+      console.log("Authenticated User:", user);
+       const validationResult = newAnswerSchema.safeParse({ roomId});
+
+       if (!validationResult.success) {
+         return socket.emit('error', { message: validationResult.error.errors });
+       }
+      
       const messageData = {
         type: 'newAnswer',
         data: {
@@ -58,20 +90,28 @@ const setupRoomSocket = (io: Server) => {
         },
       };
 
-      try {
+      
         // Publish to Redis channel
         await publishMessage(`room:${roomId}`, JSON.stringify(messageData));
 
         // Send to Kafka for persistence
-        await sendMessageToKafka('eurora-app-group', JSON.stringify(messageData));
+        await sendMessageToKafka('room-chat', JSON.stringify(messageData));
 
       } catch (error) {
-        console.error('Failed to publish new answer:', error);
+        console.error("Error handling newAnswer:", error);
+        socket.emit("error", { message: "Internal Server Error" });
       }
     });
 
     // Handle upvote for a question
     socket.on('upvoteQuestion', async (roomId: string, questionId: string) => {
+       // Validate input
+       const validationResult = voteSchema.safeParse({ roomId});
+
+       if (!validationResult.success) {
+         return socket.emit('error', { message: validationResult.error.errors });
+       }
+      
       const messageData = {
         type: 'upvoteQuestion',
         data: {
@@ -86,7 +126,7 @@ const setupRoomSocket = (io: Server) => {
         await publishMessage(`room:${roomId}`, JSON.stringify(messageData));
 
         // Send to Kafka for persistence
-        await sendMessageToKafka('eurora-app-group', JSON.stringify(messageData));
+        await sendMessageToKafka('room-chat', JSON.stringify(messageData));
 
       } catch (error) {
         console.error('Failed to publish upvote:', error);
@@ -95,6 +135,12 @@ const setupRoomSocket = (io: Server) => {
 
     // Handle downvote for a question
     socket.on('downvoteQuestion', async (roomId: string, questionId: string) => {
+      const validationResult = voteSchema.safeParse({ roomId});
+
+      if (!validationResult.success) {
+        return socket.emit('error', { message: validationResult.error.errors });
+      }
+
       const messageData = {
         type: 'downvoteQuestion',
         data: {
@@ -109,7 +155,7 @@ const setupRoomSocket = (io: Server) => {
         await publishMessage(`room:${roomId}`, JSON.stringify(messageData));
 
         // Send to Kafka for persistence
-        await sendMessageToKafka('eurora-app-group', JSON.stringify(messageData));
+        await sendMessageToKafka('room-chat', JSON.stringify(messageData));
 
       } catch (error) {
         console.error('Failed to publish downvote:', error);

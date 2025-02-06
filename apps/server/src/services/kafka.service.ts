@@ -2,17 +2,18 @@ import { consumeMessages } from '../config/kafka';
 import prisma from '../config/prisma';
 
 const startKafkaConsumer = async () => {
-  await consumeMessages('room-messages', async (message) => {
+  await consumeMessages('room-chat', async (message) => {
     const { type, data } = JSON.parse(message);
 
     try {
       if (type === 'newQuestion') {
         // Persist question in PostgreSQL
+        console.log(message)
         await prisma.question.create({
           data: {
             id: data.questionId,
             room_id: data.roomId,
-            content: data.question,
+            content: data.content,
             sender_name: data.senderName,
             upvotes: data.upvotes,
             downvotes: data.downvotes,
@@ -26,7 +27,7 @@ const startKafkaConsumer = async () => {
           data: {
             room_id: data.roomId,
             question_id: data.questionId,
-            content: data.answer,
+            content: data.content,
             created_at: data.timestamp,
           },
         });

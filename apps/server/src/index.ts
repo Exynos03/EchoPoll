@@ -12,30 +12,44 @@ import { connectKafka } from "./config/kafka";
 import prisma from "./config/prisma";
 import { startKafkaConsumer } from "./services/kafka.service";
 import { setupRoomSocket } from "./sockets/room.socket";
+import cors from "cors"
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: '*', // Adjust as needed
+    methods: ['GET', 'POST']
+  }
+});
 
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // Set to `true` in production if using HTTPS
+    httpOnly: true,
+    maxAge: 72 * 60 * 60 * 1000, // 3 day
+  },
+})
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: false, // Set to `true` in production if using HTTPS
-      httpOnly: true,
-      maxAge: 72 * 60 * 60 * 1000, // 3 day
-    },
-  })
-);
+app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
+io.use((socket, next) => {
+  sessionMiddleware(socket.request as any, {} as any, (err?: any) => {
+    if (err) {
+      return next(new Error("Session middleware failed"));
+    }
+    next();
+  });
+});
+
 
 // Routes
 app.use("/auth", authRouter);
@@ -58,16 +72,7 @@ setupRoomSocket(io)
 
 const PORT = process.env.PORT || 7000;
 
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   await initializeServices();
   console.log(`Server is running on ${PORT}`);
 });
-
-// app.on("error", (err) => {
-//   if (err?.code a === "EADDRINUSE") {
-//     console.error(`Port ${PORT} is already in use. Try using a different port.`);
-//     process.exit(1);
-//   } else {
-//     console.error("Server error:", err);
-//   }
-// });
