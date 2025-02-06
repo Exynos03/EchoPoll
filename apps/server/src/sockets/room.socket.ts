@@ -2,7 +2,6 @@ import { Server } from 'socket.io';
 import { publishMessage, subscribeToChannel } from '../config/redis';
 import { sendMessageToKafka } from '../config/kafka';
 import { joinRoomSchema, newAnswerSchema, newQuestionSchema, voteSchema } from '../models/validation.model';
-import { User } from "@prisma/client";
 
 
 /**
@@ -13,7 +12,7 @@ const setupRoomSocket = (io: Server) => {
   io.on('connection', (socket) => {
     socket.on('joinRoom', (roomId: string) => {
         // Validate input
-        const validationResult = joinRoomSchema.safeParse({ roomId});
+        const validationResult = joinRoomSchema.safeParse({ roomId });
 
         if (!validationResult.success) {
           return socket.emit('error', { message: validationResult.error.errors });
@@ -21,17 +20,16 @@ const setupRoomSocket = (io: Server) => {
       
         socket.join(roomId);
 
-      // Subscribe to Redis channel for the room
       subscribeToChannel(`room:${roomId}`, (message) => {
         const { type, data } = JSON.parse(message);
-        socket.emit(type, data); // Emit the message to the user
+        socket.emit(type, data); 
       });
     });
 
     // Handle new question
     socket.on('newQuestion', async (roomId: string, content: string, senderName?: string) => {
        // Validate input
-       const validationResult = newQuestionSchema.safeParse({ roomId});
+       const validationResult = newQuestionSchema.safeParse({ roomId, content, senderName});
 
        if (!validationResult.success) {
          return socket.emit('error', { message: validationResult.error.errors });
@@ -63,9 +61,7 @@ const setupRoomSocket = (io: Server) => {
 
     // Handle new answer (only room creator can answer)
     socket.on('newAnswer', async (roomId: string, content: string, questionId: string) => {
-       // Validate input
        try {
-
         // Ensure user is logged in
         const user = (socket.request as any).user;
 
@@ -74,7 +70,8 @@ const setupRoomSocket = (io: Server) => {
         }
 
       console.log("Authenticated User:", user);
-       const validationResult = newAnswerSchema.safeParse({ roomId});
+       // Validate input
+       const validationResult = newAnswerSchema.safeParse({roomId, content, questionId});
 
        if (!validationResult.success) {
          return socket.emit('error', { message: validationResult.error.errors });
@@ -106,7 +103,7 @@ const setupRoomSocket = (io: Server) => {
     // Handle upvote for a question
     socket.on('upvoteQuestion', async (roomId: string, questionId: string) => {
        // Validate input
-       const validationResult = voteSchema.safeParse({ roomId});
+       const validationResult = voteSchema.safeParse({ roomId, questionId });
 
        if (!validationResult.success) {
          return socket.emit('error', { message: validationResult.error.errors });
@@ -135,7 +132,7 @@ const setupRoomSocket = (io: Server) => {
 
     // Handle downvote for a question
     socket.on('downvoteQuestion', async (roomId: string, questionId: string) => {
-      const validationResult = voteSchema.safeParse({ roomId});
+      const validationResult = voteSchema.safeParse({ roomId, questionId});
 
       if (!validationResult.success) {
         return socket.emit('error', { message: validationResult.error.errors });

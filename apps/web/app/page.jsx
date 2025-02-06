@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { useSocket } from "./hooks/socket.hook";
 
 export default function ChatRoom() {
-  const socket = useSocket();
+
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const roomId = "hjf"; // Example room ID
+  const roomId = "22d0c9e3-f397-4ea7-bb4f-deddec631a43";
+  const socket = useSocket(roomId); // Example room ID
 
   useEffect(() => {
     if (!socket) return;

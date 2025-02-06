@@ -10,7 +10,7 @@ export const createRoom = async (req: Request, res: Response): Promise<void> => 
     const user = req.user as User;
     const creatorId = user.id;
 
-    const activeRooms = await roomService.getActiveRooms(creatorId);
+    const activeRooms = await roomService.getActiveRoomsByCreatorId(creatorId);
     if (activeRooms.length >= 5) {
       res.status(400).json({ responseCode: 2, message: "Room limit exceeded. You can only have up to 5 active rooms." });
       return;

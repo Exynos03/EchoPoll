@@ -13,6 +13,7 @@ import prisma from "./config/prisma";
 import { startKafkaConsumer } from "./services/kafka.service";
 import { setupRoomSocket } from "./sockets/room.socket";
 import cors from "cors"
+import { validateRoomID } from "./middleware/validRoomID.middleware";
 
 const app = express();
 const server = http.createServer(app);
@@ -49,7 +50,7 @@ io.use((socket, next) => {
     next();
   });
 });
-
+io.use(validateRoomID)
 
 // Routes
 app.use("/auth", authRouter);

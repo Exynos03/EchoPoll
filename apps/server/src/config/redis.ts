@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
+import { RoomService } from '../services/room.service';
 
-const redisClient: Redis = new Redis({
+export const redisClient: Redis = new Redis({
   host: process.env.REDIS_HOST as string,
   port: parseInt(process.env.REDIS_PORT as string, 10),
   username: process.env.REDIS_USERNAME as string,
@@ -35,4 +36,19 @@ const subscribeToChannel = async (channel: string, callback: (message: string) =
   });
 };
 
-export { connectRedis, publishMessage, subscribeToChannel };
+  const restoreRoomsToRedis = async () => {
+    const roomService = new RoomService()
+    const activeRooms = await roomService.getActiveRooms()
+
+  for (const room of activeRooms) {
+      const expireInSeconds = Math.floor((new Date(room.expire_date).getTime() - Date.now()) / 1000);
+
+      if (expireInSeconds > 0) {
+          await redisClient.setex(`room:${room.id}`, expireInSeconds, "active");
+      }
+  }
+
+  console.log("Rooms restored successfully.");
+}
+
+export { connectRedis, publishMessage, subscribeToChannel, restoreRoomsToRedis };
