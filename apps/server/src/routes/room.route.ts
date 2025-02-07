@@ -1,5 +1,5 @@
 import express from "express";
-import { createRoom } from "../controllers/room.controller";
+import { createRoom } from "../controllers/createRoom.controller";
 import { isAuthenticated } from "../middleware/auth.middleware";
 import validateRequest from "../middleware/validateRequest.middleware";
 import { z } from "zod";

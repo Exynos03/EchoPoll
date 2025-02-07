@@ -5,6 +5,8 @@ import { useSocket } from "./hooks/socket.hook";
 export default function ChatRoom() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [answerInput, setAnswerInput] = useState("");
+  const [selectedQuestionId, setSelectedQuestionId] = useState(null);
   const roomId = "22d0c9e3-f397-4ea7-bb4f-deddec631a43";
   const socket = useSocket(roomId); // Example room ID
 
@@ -15,11 +17,12 @@ export default function ChatRoom() {
     socket.emit("joinRoom", roomId);
     socket.on("error", (error) => {
       console.log("Socket error:", error);
-      // alert(error.message); // Display error message to the user
+      alert(error.message); // Display error message to the user
     });
 
     // Listen for new messages
     const handleNewQuestion = (message) => {
+      console.log("new quesitons")
       setMessages((prev) => [...prev, message]);
     };
 
@@ -72,30 +75,46 @@ export default function ChatRoom() {
   };
 
   const sendAnswer = () => {
-    // if (input.trim() && socket) {
-    socket.emit(
-      "newAnswer",
-      roomId,
-      "Hello I am content",
-      "Hello i am questionid",
-    );
-    setInput("");
-    // }
+    if (answerInput.trim() && socket && selectedQuestionId) {
+      socket.emit("newAnswer", roomId, answerInput, selectedQuestionId);
+      setAnswerInput("");
+      setSelectedQuestionId(null);
+    }
+  };
+
+  const upvoteQuestion = (questionId) => {
+    if (socket) {
+      socket.emit("upvoteQuestion", roomId, questionId);
+    }
+  };
+
+  const downvoteQuestion = (questionId) => {
+    console.log(questionId)
+    if (socket) {
+      socket.emit("downvoteQuestion", roomId, questionId);
+    }
   };
 
   return (
     <div>
       <h2>Room ID: {roomId}</h2>
       <div>
-        {messages.map((msg, index) => (
+        {messages.map((msg, index) => {
+          console.log(msg)
+          return(
           <div key={index}>
             <p>
               {msg.senderName}: {msg.content} ({msg.upvotes || 0}👍,{" "}
               {msg.downvotes || 0}👎)
             </p>
             {msg.answer && <p>Answer: {msg.answer.content}</p>}
+            <button onClick={() => setSelectedQuestionId(msg.questionId)}>
+              Answer this question
+            </button>
+            <button onClick={() => upvoteQuestion(msg.questionId)}>Upvote</button>
+            <button onClick={() => downvoteQuestion(msg.questionId)}>Downvote</button>
           </div>
-        ))}
+        )})}
       </div>
       <input
         type="text"
@@ -103,8 +122,18 @@ export default function ChatRoom() {
         onChange={(e) => setInput(e.target.value)}
         placeholder="Ask a question..."
       />
-      <button onClick={sendMessage}>Send</button>
-      <button onClick={sendAnswer}>Send Answer</button>
+      <button onClick={sendMessage}>Send Question</button>
+      {selectedQuestionId && (
+        <div>
+          <input
+            type="text"
+            value={answerInput}
+            onChange={(e) => setAnswerInput(e.target.value)}
+            placeholder="Write an answer..."
+          />
+          <button onClick={sendAnswer}>Send Answer</button>
+        </div>
+      )}
     </div>
   );
 }
