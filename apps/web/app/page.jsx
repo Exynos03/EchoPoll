@@ -1,9 +1,8 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import { useSocket } from "./hooks/socket.hook";
 
 export default function ChatRoom() {
-
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const roomId = "22d0c9e3-f397-4ea7-bb4f-deddec631a43";
@@ -27,8 +26,8 @@ export default function ChatRoom() {
     const handleNewAnswer = (answer) => {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.questionId === answer.questionId ? { ...msg, answer } : msg
-        )
+          msg.questionId === answer.questionId ? { ...msg, answer } : msg,
+        ),
       );
     };
 
@@ -37,8 +36,8 @@ export default function ChatRoom() {
         prev.map((msg) =>
           msg.questionId === questionId
             ? { ...msg, upvotes: (msg.upvotes || 0) + 1 }
-            : msg
-        )
+            : msg,
+        ),
       );
     };
 
@@ -47,8 +46,8 @@ export default function ChatRoom() {
         prev.map((msg) =>
           msg.questionId === questionId
             ? { ...msg, downvotes: (msg.downvotes || 0) + 1 }
-            : msg
-        )
+            : msg,
+        ),
       );
     };
 
@@ -74,8 +73,13 @@ export default function ChatRoom() {
 
   const sendAnswer = () => {
     // if (input.trim() && socket) {
-      socket.emit("newAnswer", roomId, "Hello I am content", "Hello i am questionid");
-      setInput("");
+    socket.emit(
+      "newAnswer",
+      roomId,
+      "Hello I am content",
+      "Hello i am questionid",
+    );
+    setInput("");
     // }
   };
 
@@ -86,7 +90,8 @@ export default function ChatRoom() {
         {messages.map((msg, index) => (
           <div key={index}>
             <p>
-              {msg.senderName}: {msg.content} ({msg.upvotes || 0}👍, {msg.downvotes || 0}👎)
+              {msg.senderName}: {msg.content} ({msg.upvotes || 0}👍,{" "}
+              {msg.downvotes || 0}👎)
             </p>
             {msg.answer && <p>Answer: {msg.answer.content}</p>}
           </div>

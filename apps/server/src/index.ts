@@ -1,76 +1,69 @@
 import express, { NextFunction } from "express";
-import http from 'http';
-import { Server, Socket } from 'socket.io';
+import http from "http";
+import { Server, Socket } from "socket.io";
 import session from "express-session";
 import passport from "passport";
 import authRouter from "./routes/auth.route";
-import { isAuthenticated } from "./middleware/auth.middleware";
-import "./config/passport"; // Import Passport configuration
+import "./config/passport";
 import roomRouter from "./routes/room.route";
 import { connectRedis } from "./config/redis";
 import { connectKafka } from "./config/kafka";
 import prisma from "./config/prisma";
 import { startKafkaConsumer } from "./services/kafka.service";
 import { setupRoomSocket } from "./sockets/room.socket";
-import cors from "cors"
+import cors from "cors";
 import { validateRoomID } from "./middleware/validRoomID.middleware";
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000', // Adjust as needed
-    methods: ['GET', 'POST'],
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"],
     credentials: true,
-  }
+  },
 });
 
-app.use(cors({
-  origin: "http://localhost:3000", // Allow requests from frontend
-  credentials: true, // Allow cookies/session to be sent
-}));
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  }),
+);
 
-// Session middleware
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET!,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Set to `true` in production if using HTTPS
+    secure: false,
     httpOnly: true,
-    maxAge: 72 * 60 * 60 * 1000, // 3 days
-    sameSite: "lax"
+    maxAge: 72 * 60 * 60 * 1000,
+    sameSite: "lax",
   },
 });
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(sessionMiddleware);
 app.use(passport.initialize());
 app.use(passport.session());
-
-// Socket.io middleware for authentication
 io.use((socket, next) => {
   sessionMiddleware(socket.request as any, {} as any, (err?: any) => {
     if (err) {
       return next(new Error("Session middleware failed"));
     }
 
-    // Passport authentication check
-    passport.authenticate('session', (authErr: any, user: any, info: any) => {
+    passport.authenticate("session", (authErr: any, user: any) => {
       if (authErr || !user) {
         return next(new Error("Unauthorized"));
       }
-      
-      (socket as any).user = user; // Store authenticated user on socket object
+      (socket as any).user = user;
       next();
     })(socket.request, {} as any, next);
   });
 });
-
-// Validate Room ID middleware
 io.use(validateRoomID);
 
 // Routes
@@ -92,7 +85,7 @@ const initializeServices = async () => {
 startKafkaConsumer();
 setupRoomSocket(io);
 
-const PORT = process.env.PORT || 7000;
+const PORT = process.env.PORT || 8080;
 
 server.listen(PORT, async () => {
   await initializeServices();

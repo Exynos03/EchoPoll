@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Validation schema for joining a room
 export const joinRoomSchema = z.object({
@@ -24,4 +24,3 @@ export const voteSchema = z.object({
   roomId: z.string().min(1, "Room ID is required"),
   questionId: z.string().min(1, "Question ID is required"),
 });
-

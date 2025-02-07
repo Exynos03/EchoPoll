@@ -6,7 +6,7 @@ const authRouter = express.Router();
 // Route to start Google OAuth flow
 authRouter.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
+  passport.authenticate("google", { scope: ["profile", "email"] }),
 );
 
 // Google OAuth callback route
@@ -16,7 +16,7 @@ authRouter.get(
   (req, res) => {
     // Successful authentication, redirect to profile or home page
     res.redirect("http://localhost:3000/auth/callback");
-  }
+  },
 );
 
 // Route to fetch the current user's profile
@@ -24,7 +24,7 @@ authRouter.get("/profile", (req, res) => {
   if (!req.user) {
     return res.redirect("/login"); // Redirect if user is not authenticated
   }
-  console.log("backend is fine!")
+  console.log("backend is fine!");
   res.json(req.user); // Send user data as JSON
 });
 

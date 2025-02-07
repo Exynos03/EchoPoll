@@ -15,7 +15,7 @@ export const useSocket = (roomId) => {
     const socketInstance = io(SOCKET_SERVER_URL, {
       withCredentials: true,
       transports: ["websocket"],
-      auth: { roomId }  // Send roomId as part of the socket connection
+      auth: { roomId }, // Send roomId as part of the socket connection
     });
 
     setSocket(socketInstance);

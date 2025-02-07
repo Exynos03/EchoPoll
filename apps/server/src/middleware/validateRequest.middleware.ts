@@ -15,7 +15,9 @@ const validateRequest =
           errors: error.format(),
         });
       } else {
-        res.status(500).json({responseCode: 0, message: "Internal Server Error" });
+        res
+          .status(500)
+          .json({ responseCode: 0, message: "Internal Server Error" });
       }
     }
   };

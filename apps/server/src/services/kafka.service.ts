@@ -1,14 +1,14 @@
-import { consumeMessages } from '../config/kafka';
-import prisma from '../config/prisma';
+import { consumeMessages } from "../config/kafka";
+import prisma from "../config/prisma";
 
 const startKafkaConsumer = async () => {
-  await consumeMessages('room-chat', async (message) => {
+  await consumeMessages("room-chat", async (message) => {
     const { type, data } = JSON.parse(message);
 
     try {
-      if (type === 'newQuestion') {
+      if (type === "newQuestion") {
         // Persist question in PostgreSQL
-        console.log(message)
+        console.log(message);
         await prisma.question.create({
           data: {
             id: data.questionId,
@@ -20,8 +20,7 @@ const startKafkaConsumer = async () => {
             created_at: data.timestamp,
           },
         });
-        
-      } else if (type === 'newAnswer') {
+      } else if (type === "newAnswer") {
         // Persist answer in PostgreSQL
         await prisma.answer.create({
           data: {
@@ -31,24 +30,21 @@ const startKafkaConsumer = async () => {
             created_at: data.timestamp,
           },
         });
-        
-      } else if (type === 'upvoteQuestion') {
+      } else if (type === "upvoteQuestion") {
         // Increment upvotes for the question
         await prisma.question.update({
           where: { id: data.questionId },
           data: { upvotes: { increment: 1 } },
         });
-        
-      } else if (type === 'downvoteQuestion') {
+      } else if (type === "downvoteQuestion") {
         // Increment downvotes for the question
         await prisma.question.update({
           where: { id: data.questionId },
           data: { downvotes: { increment: 1 } },
         });
-        
       }
     } catch (error) {
-      console.error('Failed to process Kafka message:', error);
+      console.error("Failed to process Kafka message:", error);
     }
   });
 };

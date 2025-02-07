@@ -1,4 +1,4 @@
-import { PrismaClient, User } from '@prisma/client';
+import { PrismaClient, User } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -15,7 +15,7 @@ export class AuthService {
       });
       return user;
     } catch (error) {
-      console.error('Error finding user by OAuth ID:', error);
+      console.error("Error finding user by OAuth ID:", error);
       throw error;
     }
   }
@@ -42,7 +42,7 @@ export class AuthService {
       });
       return newUser;
     } catch (error) {
-      console.error('Error saving user:', error);
+      console.error("Error saving user:", error);
       throw error;
     }
   }

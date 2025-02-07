@@ -1,37 +1,38 @@
-import fs  from 'fs';
-import { Kafka, Producer, Consumer, Partitioners, logLevel } from 'kafkajs';
-import path from 'path';
+import fs from "fs";
+import { Kafka, Producer, Consumer, Partitioners, logLevel } from "kafkajs";
+import path from "path";
 
 const kafka = new Kafka({
   // clientId: 'eurora-app',
   brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`],
-  ssl : {
-    ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")]
+  ssl: {
+    ca: [fs.readFileSync(path.resolve("./ca.pem"), "utf-8")],
   },
-  sasl : {
-    username : process.env.KAFKA_USERNAME!,
-    password : process.env.KAFKA_PASSWORD!,
-    mechanism: "plain"
+  sasl: {
+    username: process.env.KAFKA_USERNAME!,
+    password: process.env.KAFKA_PASSWORD!,
+    mechanism: "plain",
   },
   // logLevel: logLevel.ERROR
 });
 
-const producer: Producer = kafka.producer({createPartitioner: Partitioners.LegacyPartitioner,}) // Add this to retain old behavior});
-const consumer: Consumer = kafka.consumer({ groupId: 'room-chat' });
+const producer: Producer = kafka.producer({
+  createPartitioner: Partitioners.LegacyPartitioner,
+}); // Add this to retain old behavior});
+const consumer: Consumer = kafka.consumer({ groupId: "room-chat" });
 
 const connectKafka = async () => {
   await producer.connect();
   await consumer.connect();
-  
+
   // Force metadata refresh
   const admin = kafka.admin();
   await admin.connect();
-  await admin.fetchTopicMetadata({ topics: ['room-chat'] });
+  await admin.fetchTopicMetadata({ topics: ["room-chat"] });
   await admin.disconnect();
 
-  console.log('✅ Connected to Kafka Producer and Consumer');
+  console.log("✅ Connected to Kafka Producer and Consumer");
 };
-
 
 const sendMessageToKafka = async (topic: string, message: string) => {
   await producer.send({
@@ -40,8 +41,10 @@ const sendMessageToKafka = async (topic: string, message: string) => {
   });
 };
 
-
-const consumeMessages = async (topic: string, callback: (message: string) => void) => {
+const consumeMessages = async (
+  topic: string,
+  callback: (message: string) => void,
+) => {
   console.log(`📌 Subscribing to topic: ${topic}`);
 
   await consumer.subscribe({ topic, fromBeginning: true });
@@ -56,6 +59,5 @@ const consumeMessages = async (topic: string, callback: (message: string) => voi
 
   console.log(`✅ Successfully subscribed to ${topic}`);
 };
-
 
 export { connectKafka, sendMessageToKafka, consumeMessages };
